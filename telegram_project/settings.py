@@ -68,7 +68,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'telegram_project.wsgi.application'
+WSGI_APPLICATION = 'telegram_project.wsgi.app'
 
 
 # Database
