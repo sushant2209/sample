@@ -7,6 +7,7 @@ from telethon.sessions import StringSession
 from datetime import datetime, timedelta
 from django.http import JsonResponse
 from django.conf import settings
+import pytz
 
 # Define async function to fetch messages from a specific channel
 async def fetch_messages(channel_username):
@@ -16,15 +17,16 @@ async def fetch_messages(channel_username):
         await client.start(phone=settings.PHONE_NUMBER)
         channel = await client.get_entity(channel_username)
 
-        # Define the time window for the last 5 minutes
-        now = datetime.now()  # Current time on the server (which is in IST)
+        # Define the time window for the last 5 minutes, ensuring timezone awareness
+        ist_timezone = pytz.timezone('Asia/Kolkata')
+        now = datetime.now(ist_timezone)  # Current time in IST
         five_minutes_ago = now - timedelta(minutes=5)
 
         # Fetch messages (up to 100) to filter
-        messages = await client.get_messages(channel, limit=100)
+        messages = await client.get_messages(channel, limit=25)
 
         for message in messages:
-            message_time = message.date  # Server time (already in IST)
+            message_time = message.date.astimezone(ist_timezone)  # Convert message time to IST
             if message_time >= five_minutes_ago:
                 timestamp = message_time.strftime('%Y-%m-%d %H:%M:%S')
                 text = message.text or ''
