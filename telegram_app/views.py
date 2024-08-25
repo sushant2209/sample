@@ -5,9 +5,9 @@ from oauth2client.service_account import ServiceAccountCredentials
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from datetime import datetime, timedelta
+import pytz
 from django.http import JsonResponse
 from django.conf import settings
-import pytz
 
 # Define async function to fetch messages from a specific channel
 async def fetch_messages(channel_username):
@@ -16,23 +16,24 @@ async def fetch_messages(channel_username):
     try:
         await client.start(phone=settings.PHONE_NUMBER)
         channel = await client.get_entity(channel_username)
-
-        # Define the time window for the last 5 minutes, ensuring timezone awareness
-        ist_timezone = pytz.timezone('Asia/Kolkata')
-        now = datetime.now(ist_timezone)  # Current time in IST
+        
+        # Define the time window for the last 5 minutes
+        now = datetime.now(pytz.timezone('Asia/Kolkata'))  # Current time in IST
         five_minutes_ago = now - timedelta(minutes=5)
-
-        # Fetch messages (up to 100) to filter
-        messages = await client.get_messages(channel, limit=25)
-
+        
+        messages = await client.get_messages(channel, limit=100)  # Fetch up to 100 messages
+        
         for message in messages:
-            message_time = message.date.astimezone(ist_timezone)  # Convert message time to IST
+            message_time = message.date.astimezone(pytz.timezone('Asia/Kolkata'))  # Convert to IST
             if message_time >= five_minutes_ago:
                 timestamp = message_time.strftime('%Y-%m-%d %H:%M:%S')
+                post_link = f"https://t.me/{channel_username}/{message.id}"  # Generate the post link
                 text = message.text or ''
-                data.append([timestamp, text])
+                data.append([timestamp, post_link, text])  # Include time, post link, and message text
+
     finally:
         await client.disconnect()
+
     return data
 
 # Define async function to update a specific Google Sheet
@@ -60,7 +61,7 @@ def fetch_and_update(request):
         messages_2 = loop.run_until_complete(fetch_messages(settings.CHANNEL_USERNAME_2))
 
         # Filter out messages containing the keyword 'Rank'
-        filtered_messages_2 = [msg for msg in messages_2 if 'Rank' not in msg[1]]
+        filtered_messages_2 = [msg for msg in messages_2 if 'Rank' not in msg[2]]
 
         # Update the second sheet with filtered messages
         loop.run_until_complete(update_google_sheets(filtered_messages_2, settings.SPREADSHEET_NAME_2))
