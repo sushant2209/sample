@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "telegram_project",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "smartparking/wsgi.py"
+    }
+  ]
+}
