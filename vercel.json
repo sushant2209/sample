@@ -1,7 +1,7 @@
 {
   "builds": [
     {
-      "src": "telegram_project",
+      "src": "telegram_project/wsgi.py",
       "use": "@vercel/python"
     }
   ],
