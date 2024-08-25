@@ -8,7 +8,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "smartparking/wsgi.py"
+      "dest": "telegram_project/wsgi.py"
     }
   ]
 }
