@@ -43,7 +43,6 @@ async def update_google_sheets(data, spreadsheet_name):
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
     sheet = client.open(spreadsheet_name).sheet1
-    sheet.clear()
     if data:
         sheet.append_rows(data, value_input_option='RAW')
 
