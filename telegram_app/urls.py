@@ -1,7 +1,7 @@
-# myapp/urls.py
 from django.urls import path
-from .views import fetch_and_update
+from . import views
 
 urlpatterns = [
-    path('fetch-update/', fetch_and_update, name='fetch_and_update'),
+    path('update_sheet_1/', views.fetch_and_update_spreadsheet_1, name='update_spreadsheet_1'),
+    path('update_sheet_2/', views.fetch_and_update_spreadsheet_2, name='update_spreadsheet_2'),
 ]
