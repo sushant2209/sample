@@ -20,7 +20,7 @@ async def fetch_messages(channel_username):
         now = datetime.now(pytz.timezone('Asia/Kolkata'))  # Current time in IST
         five_minutes_ago = now - timedelta(minutes=5)
         
-        messages = await client.get_messages(channel, limit=100)  # Fetch up to 100 messages
+        messages = await client.get_messages(channel, limit=25)  # Fetch up to 100 messages
         
         for message in messages:
             message_time = message.date.astimezone(pytz.timezone('Asia/Kolkata'))  # Convert to IST
