@@ -1,15 +1,15 @@
-import json
+from django.http import JsonResponse
 import asyncio
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from telethon import TelegramClient
-from telethon.sessions import StringSession
 from datetime import datetime, timedelta
 import pytz
-from django.http import JsonResponse
+from telethon import TelegramClient
+from telethon.sessions import StringSession
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 from django.conf import settings
+import json
 
-# Define async function to fetch messages from a specific channel
+# Async function to fetch messages from a specific Telegram channel
 async def fetch_messages(channel_username):
     client = TelegramClient(StringSession(settings.SESSION_STRING), settings.API_ID, settings.API_HASH)
     data = []
@@ -17,7 +17,6 @@ async def fetch_messages(channel_username):
         await client.start(phone=settings.PHONE_NUMBER)
         channel = await client.get_entity(channel_username)
         
-        # Define the time window for the last 5 minutes
         now = datetime.now(pytz.timezone('Asia/Kolkata'))  # Current time in IST
         five_minutes_ago = now - timedelta(minutes=5)
         
@@ -36,7 +35,7 @@ async def fetch_messages(channel_username):
 
     return data
 
-# Define async function to update a specific Google Sheet
+# Async function to update a specific Google Sheet
 async def update_google_sheets(data, spreadsheet_name):
     scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
     creds_dict = json.loads(settings.GOOGLE_SHEETS_CREDS_JSON)
@@ -46,31 +45,43 @@ async def update_google_sheets(data, spreadsheet_name):
     if data:
         sheet.append_rows(data, value_input_option='RAW')
 
-# Synchronous view function to handle both channels and sheets
-def fetch_and_update(request):
+# Django view for fetching messages from the first channel and updating the first Google Sheet
+def fetch_and_update_spreadsheet_1(request):
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        # Fetch messages from the first channel and update the first sheet
-        messages_1 = loop.run_until_complete(fetch_messages(settings.CHANNEL_USERNAME_1))
-        loop.run_until_complete(update_google_sheets(messages_1, settings.SPREADSHEET_NAME_1))
+        async def fetch_and_update():
+            messages_1 = await fetch_messages(settings.CHANNEL_USERNAME_1)
+            await update_google_sheets(messages_1, settings.SPREADSHEET_NAME_1)
+            return len(messages_1)
 
-        # Fetch messages from the second channel
-        messages_2 = loop.run_until_complete(fetch_messages(settings.CHANNEL_USERNAME_2))
-
-        # Filter out messages containing the keyword 'Rank'
-        filtered_messages_2 = [msg for msg in messages_2 if 'Rank' not in msg[2]]
-
-        # Update the second sheet with filtered messages
-        loop.run_until_complete(update_google_sheets(filtered_messages_2, settings.SPREADSHEET_NAME_2))
+        # Run the task asynchronously
+        message_count_1 = loop.run_until_complete(fetch_and_update())
 
         loop.close()
 
-        return JsonResponse({
-            "status": "success", 
-            "message_count_1": len(messages_1), 
-            "message_count_2": len(filtered_messages_2)
-        })
+        return JsonResponse({"status": "success", "message_count": message_count_1})
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)})
+
+# Django view for fetching messages from the second channel, filtering, and updating the second Google Sheet
+def fetch_and_update_spreadsheet_2(request):
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        async def fetch_and_update():
+            messages_2 = await fetch_messages(settings.CHANNEL_USERNAME_2)
+            filtered_messages_2 = [msg for msg in messages_2 if 'Rank' not in msg[2]]
+            await update_google_sheets(filtered_messages_2, settings.SPREADSHEET_NAME_2)
+            return len(filtered_messages_2)
+
+        # Run the task asynchronously
+        message_count_2 = loop.run_until_complete(fetch_and_update())
+
+        loop.close()
+
+        return JsonResponse({"status": "success", "message_count": message_count_2})
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)})
