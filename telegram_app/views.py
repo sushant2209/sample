@@ -53,8 +53,9 @@ def fetch_and_update_spreadsheet_1(request):
 
         async def fetch_and_update():
             messages_1 = await fetch_messages(settings.CHANNEL_USERNAME_1)
-            await update_google_sheets(messages_1, settings.SPREADSHEET_NAME_1)
-            return len(messages_1)
+            filtered_messages_2 = [msg for msg in messages_1 if 'trending' not in msg[2]]
+            await update_google_sheets(filtered_messages_2, settings.SPREADSHEET_NAME_1)
+            return len(filtered_messages_2)
 
         # Run the task asynchronously
         message_count_1 = loop.run_until_complete(fetch_and_update())
